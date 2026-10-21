@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IncR-3DSGG: Incremental Posed RGB Image Based 3D Scene Graph Generation via Privileged Depth Supervision</title>
+  <meta name="description" content="Project page for IncR-3DSGG (WACV 2027): Incremental Posed RGB Image Based 3D Scene Graph Generation via Privileged Depth Supervision." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- KaTeX for Math Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false}
+      ]
+    });"></script>
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #eff6ff;
+      --accent: #0ea5e9;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+      --highlight-row: #eff6ff;
+      --radius: 14px;
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.07), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      --shadow-lg: 0 20px 35px -10px rgba(15, 23, 42, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Sticky Top Navigation */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid #bfdbfe;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.4rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+
+    /* Hero Header */
+    .hero {
+      background: radial-gradient(circle at 50% 0%, #dbeafe 0%, rgba(248, 250, 252, 0) 65%);
+      padding: 4rem 1.5rem 2.5rem;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    .venue-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface);
+      border: 1px solid #cbd5e1;
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .hero-title {
+      font-size: clamp(1.85rem, 3.8vw, 2.75rem);
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+      max-width: 960px;
+      margin: 0 auto 1.5rem;
+      color: var(--text);
+    }
+
+    .hero-title span.gradient-text {
+      background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .authors {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 0.65rem;
+      font-size: 1.12rem;
+      font-weight: 600;
+    }
+
+    .authors a {
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .authors a:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+
+    .affiliations {
+      color: var(--text-muted);
+      font-size: 0.98rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .affiliations .emails {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+      color: #64748b;
+    }
+
+    /* Action Buttons */
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.85rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.68rem 1.35rem;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--text);
+      color: #ffffff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border-color: #cbd5e1;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    /* Key Highlight Metrics Strip */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.15rem 1rem;
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 0.25rem;
+    }
+
+    .stat-sub {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    /* Sections & Cards */
+    section {
+      padding: 2.25rem 0;
+    }
+
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.25rem;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.25rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .section-title::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 24px;
+      background: linear-gradient(180deg, var(--primary), var(--accent));
+      border-radius: 99px;
+    }
+
+    /* Figures */
+    .figure-box {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+      margin: 1.25rem 0;
+    }
+
+    .figure-box img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      cursor: zoom-in;
+      transition: transform 0.2s ease;
+    }
+
+    .figure-box img:hover {
+      transform: scale(1.005);
+    }
+
+    .caption {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 0.9rem;
+      text-align: left;
+      line-height: 1.55;
+    }
+
+    .caption strong {
+      color: var(--text);
+    }
+
+    /* Abstract & Contributions */
+    .abstract-text {
+      font-size: 1.03rem;
+      color: #1e293b;
+      text-align: justify;
+      margin-bottom: 1.5rem;
+    }
+
+    .contributions-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+
+    .contrib-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem;
+    }
+
+    .contrib-item h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 0.4rem;
+    }
+
+    .contrib-item p {
+      font-size: 0.87rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Method Grid */
+    .method-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin: 1.5rem 0;
+    }
+
+    .step-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.35rem;
+      position: relative;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .step-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .step-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .formula-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+      font-size: 0.95rem;
+    }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 1.25rem 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    th, td {
+      padding: 0.7rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    td:first-child, th:first-child {
+      text-align: left;
+      font-weight: 500;
+    }
+
+    tr.ours-row {
+      background-color: var(--highlight-row);
+      font-weight: 600;
+    }
+
+    tr.ours-gt-row {
+      background-color: #f8fafc;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* Tabs for Quantitative Results */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+
+    .tab-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Qualitative Gallery */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.25rem;
+    }
+
+    .gallery-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      background: white;
+      cursor: zoom-in;
+      border: 1px solid var(--border);
+    }
+
+    .gallery-caption {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.75rem;
+    }
+
+    /* BibTeX */
+    .bibtex-wrapper {
+      position: relative;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.9rem;
+      right: 0.9rem;
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Lightbox Modal */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.88);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      cursor: zoom-out;
+    }
+
+    .lightbox.open {
+      display: flex;
+    }
+
+    .lightbox img {
+      max-width: 95vw;
+      max-height: 90vh;
+      border-radius: 10px;
+      background: white;
+      padding: 0.5rem;
+      box-shadow: var(--shadow-lg);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2.5rem 1.5rem 3.5rem;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+      .section-card {
+        padding: 1.35rem;
+      }
+      .gallery-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="#" class="nav-brand">
+        IncR-3DSGG
+        <span class="nav-badge">WACV 2027</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#abstract">Abstract</a></li>
+        <li><a href="#method">Method</a></li>
+        <li><a href="#prp">PRP Architecture</a></li>
+        <li><a href="#results">Results</a></li>
+        <li><a href="#qualitative">Qualitative</a></li>
+        <li><a href="#bibtex">BibTeX</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container">
+      <div class="venue-pill">
+        <span>IEEE/CVF Winter Conference on Applications of Computer Vision (WACV) 2027</span>
+      </div>
+
+      <h1 class="hero-title">
+        <span class="gradient-text">IncR-3DSGG:</span> Incremental Posed RGB Image Based 3D Scene Graph Generation via Privileged Depth Supervision
+      </h1>
+
+      <div class="authors">
+        <a href="mailto:mrunmai.phatak@uni-a.de">Mrunmai Phatak</a>
+        <a href="mailto:daniel.kienzle@uni-a.de">Daniel Kienzle</a>
+        <a href="mailto:rainer.lienhart@uni-a.de">Rainer Lienhart</a>
+      </div>
+
+      <div class="affiliations">
+        <div>Universität Augsburg</div>
+        <div class="emails">{mrunmai.phatak, daniel.kienzle, rainer.lienhart}@uni-a.de</div>
+      </div>
+
+      <div class="btn-group">
+        <a href="#paper" class="btn btn-primary" onclick="alert('Paper PDF will be released upon camera-ready publication / arXiv release.'); return false;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Paper (PDF - Soon)
+        </a>
+        <a href="#supp" class="btn btn-secondary" onclick="alert('Supplementary material will be released upon publication.'); return false;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Supplementary (Soon)
+        </a>
+        <a href="#code" class="btn btn-secondary" onclick="alert('Code and model checkpoints will be released upon publication.'); return false;">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          Code &amp; Checkpoints (Soon)
+        </a>
+        <a href="#bibtex" class="btn btn-secondary">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          BibTeX
+        </a>
+      </div>
+
+      <!-- Key Metrics Highlights -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">48.1%</div>
+          <div class="stat-label">Mean Object Recall</div>
+          <div class="stat-sub">vs. 27.0% strongest baseline on 3RScan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">35.1%</div>
+          <div class="stat-label">Mean Predicate Recall</div>
+          <div class="stat-sub">Nearly 2&times; MonoSSG (17.6%)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">1.16</div>
+          <div class="stat-label">Instance Fragmentation</div>
+          <div class="stat-sub">vs. 1.73–1.74 for depth-based merging</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">16.2 ms</div>
+          <div class="stat-label">Graph Overhead / View</div>
+          <div class="stat-sub">PRP (2.3 ms) + Assoc (1.4 ms) + PGO (12.5 ms)</div>
+        </div>
+      </div>
+
+      <!-- Teaser Figure -->
+      <div class="figure-box" style="box-shadow: var(--shadow-md);">
+        <img src="img/teaser_final_final.png" alt="IncR-3DSGG Incremental 3D Scene Graph Construction Teaser" onclick="openLightbox(this.src)" />
+        <p class="caption">
+          <strong>Figure 1: Incremental construction of the global scene graph $\mathcal{G}_G$ over 20 processed views.</strong>
+          Nodes are instantiated when an object is first detected and refined as later views contribute pairwise constraints.
+          The ground-truth room scan is drawn in the global coordinate frame purely as a backdrop, illustrating how our predicted nodes align with the annotated instances.
+          <strong>IncR-3DSGG observes no depth and builds no point cloud or mesh at inference</strong>, producing metrically grounded 3D object positions and semantic relations directly from posed RGB images.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Abstract Section -->
+    <section id="abstract">
+      <div class="section-card">
+        <h2 class="section-title">Abstract</h2>
+        <p class="abstract-text">
+          Scene graphs provide a compact, structured representation of environments by capturing objects and their spatial or semantic relationships in a form suitable for embodied agents. Existing 3D scene graph generation methods often rely on depth sensing at inference, either to associate object instances across views via point cloud overlap or to compute inter-object relations from geometric cues, limiting deployment to platforms with depth sensors. We propose <strong>IncR-3DSGG</strong>, which builds 3D scene graphs incrementally from posed RGB images (camera extrinsics estimated by an off-the-shelf visual SLAM system), eliminating the use of depth sensors at inference. Our method leverages a <strong>Parametric Relation Predictor (PRP)</strong> that learns to estimate pairwise distances and relative angles between objects from 2D visual features and 2D geometric cues, using privileged 3D geometric supervision available only during training. These learned pairwise measurements are fused across views through <strong>Pose Graph Optimization (PGO)</strong> to recover metrically grounded 3D object positions and build a globally consistent 3D scene graph incrementally. On the real-world <strong>3RScan</strong> dataset, our method attains <strong>48.1</strong> mean object recall and <strong>35.1</strong> mean predicate recall under the 3DSSG evaluation protocol, substantially exceeding the strongest baseline on both (27.0 and 17.6) while receiving no reconstructed geometry. It also produces less fragmented instance associations (<strong>1.16</strong> vs. 1.73–1.74), showing that structured 3D scene representations can be built without runtime depth sensing.
+        </p>
+
+        <div class="contributions-list">
+          <div class="contrib-item">
+            <h4>Depth-Free Inference</h4>
+            <p>Incrementally constructs metrically grounded 3D scene graphs from posed RGB sequences alone using privileged 3D supervision only during training.</p>
+          </div>
+          <div class="contrib-item">
+            <h4>Parametric Relation Predictor</h4>
+            <p>Estimates pairwise metric distances, angular displacements, support predicates, and object extents directly from 2D panoptic masks and visual features.</p>
+          </div>
+          <div class="contrib-item">
+            <h4>Relational Pose Graph Optimization</h4>
+            <p>Propagates spatial information across the relational constraint graph so well-observed landmarks improve the 3D localization of rarely seen objects.</p>
+          </div>
+          <div class="contrib-item">
+            <h4>Graceful Degradation</h4>
+            <p>Avoids point-cloud boundary bleeding and overlap failures that cause severe over-segmentation in depth-based pipelines under noisy masks or camera rotation.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Method Overview Section -->
+    <section id="method">
+      <div class="section-card">
+        <h2 class="section-title">Method Overview</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">
+          At each time step $t$, IncR-3DSGG receives an RGB image $\mathcal{I}_t$ with camera pose $T_t \in \mathrm{SE}(3)$ and constructs a per-view local scene graph $\mathcal{G}_L = (\mathcal{V}_L, \mathcal{E}_L)$, which is incrementally merged into a persistent global 3D scene graph $\mathcal{G}_G = (\mathcal{V}_G, \mathcal{E}_G)$.
+        </p>
+
+        <div class="figure-box">
+          <img src="img/incr_3dsgg_pipeline.png" alt="IncR-3DSGG Pipeline Overview" onclick="openLightbox(this.src)" />
+          <p class="caption">
+            <strong>Figure 2: Overview of our IncR-3DSGG framework.</strong> Given an RGB image $\mathcal{I}_t$ and camera poses $\mathcal{T}_{t=1}^T$, a frozen EoMT backbone produces per-object nodes $\mathcal{V}_L$ and 2D relation geometry, which are converted into edges $\mathcal{E}_L$ using our learned Parametric Relation Predictor (PRP), forming per-view local scene graphs $\mathcal{G}_L$. These are incrementally merged via cross-view object association and pose graph optimization (PGO) into a globally consistent 3D scene graph $\mathcal{G}_G$.
+          </p>
+        </div>
+
+        <div class="method-steps">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <h3>Object Node Detection (EoMT)</h3>
+            <p>
+              An Encoder-Only Mask Transformer (EoMT) with a DINOv3 backbone extracts semantic labels $c_i$, pixel-level instance masks $m_i$, and mask-pooled visual features $f_i$ in a single forward pass.
+            </p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <h3>Cross-View Object Association</h3>
+            <p>
+              Local detections are matched to existing global nodes via Hungarian assignment over visual cosine similarity and a soft class-consistency constraint $\phi(c_i, c_j)$, updating matched node features via exponential moving average.
+            </p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <h3>Pose Graph Optimization (PGO)</h3>
+            <p>
+              Predicted camera-frame centroid distances $\hat{d}_{ij}$, azimuths $\hat{\alpha}_{ij}$, and elevations $\hat{\epsilon}_{ij}$ are rotated by $T_t$ into world-frame displacements $\hat{\boldsymbol{\delta}}_{ij}$ and weighted by $w_{ij} = \gamma_{ij}/(1 + e_i + e_j)$ to downweight large objects.
+            </p>
+          </div>
+        </div>
+
+        <div class="formula-box">
+          <strong>Global Position Optimization Objective:</strong> All 3D object positions $\{\mathbf{p}_i\}$ are jointly optimized after each view via Huber-robustified nonlinear least squares over pairwise residuals $\mathbf{r}_{ij} = (\mathbf{p}_j - \mathbf{p}_i) - \hat{\boldsymbol{\delta}}_{ij}$:
+          $$\mathbf{p}^* = \arg\min_{\{\mathbf{p}_i\}} \sum_{(i,j) \in \mathcal{C}} \rho_H\!\left(\sqrt{w_{ij}}\,\mathbf{r}_{ij}\right) + w_a \,\| \mathbf{p}_a - \mathbf{p}_a^0 \|^2$$
+        </div>
+      </div>
+    </section>
+
+    <!-- Parametric Relation Predictor Section -->
+    <section id="prp">
+      <div class="section-card">
+        <h2 class="section-title">Parametric Relation Predictor (PRP)</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">
+          A central challenge in building 3D scene graphs from RGB alone is inferring the pairwise 3D geometry that relational reasoning depends on with no access to depth. PRP takes 2D visual features $f_i$, semantic categories $c_i$, and a 10-D relative 2D mask geometry vector $g_{ij}$ to jointly predict 3D pairwise geometry and support predicates.
+        </p>
+
+        <div class="figure-box">
+          <img src="img/prp_3dsgg.png" alt="Parametric Relation Predictor Architecture" onclick="openLightbox(this.src)" />
+          <p class="caption">
+            <strong>Figure 3: Parametric Relation Predictor (PRP) architecture.</strong>
+            In the <em>per-object encoding</em> stage (left), EoMT extracts visual features $f_i$, instance masks $m_i$, and class labels $c_i$ for $K$ detected objects, which attend to each other through an unordered Transformer encoder.
+            In the <em>pair construction</em> stage (right), contextualized subject ($h'_i$) and object representations ($h'_j$) are combined with projected 2D geometry ($g'_{ij}$) to form directed pair features $p_{ij}$, decoded by independent heads for 3D geometry, relation class, pairwise confidence, and per-object extent.
+          </p>
+        </div>
+
+        <div class="formula-box">
+          <strong>Directed Pair Feature Construction ($P = K(K-1)$ pairs):</strong>
+          $$p_{ij} = \text{MLP}\big([\,h_i';\; h_j';\; h_i' - h_j';\; h_i' \odot h_j';\; g'_{ij}\,]\big)$$
+          where $g_{ij} = [\Delta x,\; \Delta y,\; \log\tfrac{a_s}{a_o},\; \text{IoU}_\text{box},\; \Delta y_v,\; \Delta x_h,\; \sqrt{\tfrac{a_s}{a_o}},\; r_\text{enc},\; d_\text{2d},\; \text{IoU}_\text{mask}] \in \mathbb{R}^{10}$ encodes 2D mask and box cues.
+        </div>
+      </div>
+    </section>
+
+    <!-- Quantitative Results Section -->
+    <section id="results">
+      <div class="section-card">
+        <h2 class="section-title">Quantitative Results</h2>
+
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab(event, 'tab-3rscan')">3RScan / 3DSSG Benchmark</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-loc')">Object Localization &amp; Association</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-rot')">Viewpoint Variation (AI2-THOR)</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-vggt')">VGGT Comparison &amp; Runtime</button>
+        </div>
+
+        <!-- Tab 1: 3RScan Benchmark -->
+        <div id="tab-3rscan" class="tab-content active">
+          <p style="color: var(--text-muted); font-size: 0.93rem; margin-bottom: 0.75rem;">
+            <strong>3D Scene Graph Generation on 3RScan under the <code>Sparse</code> setting (<code>l20</code>: 20 object classes, 8 support predicates, 157-scan test split).</strong>
+            All methods observe the same RGB keyframes and camera poses; baselines additionally receive object instances and geometry from the ORB-SLAM3 sparse point map, whereas <strong>Ours receives no triangulated point map</strong>.
+          </p>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Geometry Source</th>
+                  <th>R@1 Obj &uarr;</th>
+                  <th>R@1 Pred &uarr;</th>
+                  <th>R@1 Trip &uarr;</th>
+                  <th>mR.Obj &uarr;</th>
+                  <th>mR.Pred &uarr;</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>IMP</td>
+                  <td>Sparse pts (ORB-SLAM3)</td>
+                  <td>27.5</td>
+                  <td>90.8</td>
+                  <td>8.5</td>
+                  <td>20.4</td>
+                  <td>14.0</td>
+                </tr>
+                <tr>
+                  <td>VGfM</td>
+                  <td>Sparse pts (ORB-SLAM3)</td>
+                  <td>27.7</td>
+                  <td>90.6</td>
+                  <td>8.8</td>
+                  <td>24.5</td>
+                  <td>13.9</td>
+                </tr>
+                <tr>
+                  <td>3DSSG</td>
+                  <td>Sparse pts (ORB-SLAM3)</td>
+                  <td>10.8</td>
+                  <td>90.1</td>
+                  <td>1.3</td>
+                  <td>6.0</td>
+                  <td>13.7</td>
+                </tr>
+                <tr>
+                  <td>SGFN</td>
+                  <td>Sparse pts (ORB-SLAM3)</td>
+                  <td>14.8</td>
+                  <td>88.2</td>
+                  <td>2.2</td>
+                  <td>8.6</td>
+                  <td>15.5</td>
+                </tr>
+                <tr>
+                  <td>MonoSSG</td>
+                  <td>Sparse pts (ORB-SLAM3)</td>
+                  <td>28.6</td>
+                  <td>89.8</td>
+                  <td><strong>9.8</strong></td>
+                  <td>27.0</td>
+                  <td>17.6</td>
+                </tr>
+                <tr class="ours-row">
+                  <td><strong>IncR-3DSGG (Ours)</strong></td>
+                  <td><strong>Predicted (2D RGB only)</strong></td>
+                  <td><strong>36.7</strong></td>
+                  <td><strong>93.7</strong></td>
+                  <td>9.4</td>
+                  <td><strong>48.1</strong></td>
+                  <td><strong>35.1</strong></td>
+                </tr>
+                <tr class="ours-gt-row">
+                  <td>Ours (GT masks oracle)</td>
+                  <td>Predicted (2D RGB only)</td>
+                  <td>67.2</td>
+                  <td>89.8</td>
+                  <td>34.8</td>
+                  <td>78.4</td>
+                  <td>58.6</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 2: Localization & Association -->
+        <div id="tab-loc" class="tab-content">
+          <p style="color: var(--text-muted); font-size: 0.93rem; margin-bottom: 0.75rem;">
+            <strong>Object Localization and Cross-View Association across 3RScan and AI2-THOR.</strong>
+            Depth-based baselines run on the exact same EoMT segmentation masks using depth back-projection at every frame; our method uses posed RGB only.
+          </p>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th rowspan="2">Method</th>
+                  <th colspan="4">3RScan (Real-World Scans)</th>
+                  <th colspan="2">AI2-THOR (Predicted Masks)</th>
+                </tr>
+                <tr>
+                  <th>GTRec &uarr;</th>
+                  <th>Purity &uarr;</th>
+                  <th>Frag. &darr;</th>
+                  <th>PosErr (m) &darr;</th>
+                  <th>Frag. &darr;</th>
+                  <th>PosErr (m) &darr;</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>ConceptGraphs-style (RGB-D)</td>
+                  <td>0.585</td>
+                  <td><strong>0.897</strong></td>
+                  <td>1.743</td>
+                  <td><strong>0.680</strong></td>
+                  <td>1.319</td>
+                  <td>3.250</td>
+                </tr>
+                <tr>
+                  <td>SGFusion-style (RGB-D)</td>
+                  <td><strong>0.714</strong></td>
+                  <td>0.802</td>
+                  <td>1.738</td>
+                  <td>0.741</td>
+                  <td>1.935</td>
+                  <td>2.226</td>
+                </tr>
+                <tr class="ours-row">
+                  <td><strong>IncR-3DSGG (Ours, RGB-only)</strong></td>
+                  <td>0.400</td>
+                  <td>0.664</td>
+                  <td><strong>1.156</strong></td>
+                  <td>1.159</td>
+                  <td><strong>1.129</strong></td>
+                  <td><strong>0.899</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 3: Viewpoint Variation -->
+        <div id="tab-rot" class="tab-content">
+          <p style="color: var(--text-muted); font-size: 0.93rem; margin-bottom: 0.75rem;">
+            <strong>Robustness to Camera Rotation in AI2-THOR.</strong>
+            Imprecise mask boundaries pull background depth points into projected clouds, causing overlap-based depth merging to severely over-segment scenes under non-zero or random camera yaw (35 &rarr; 929 nodes), whereas our visual-semantic association + PGO remains compact and stable.
+          </p>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th rowspan="2">Method</th>
+                  <th colspan="4">Random Camera Yaw</th>
+                  <th colspan="4">Non-Zero Fixed Camera Rotation</th>
+                </tr>
+                <tr>
+                  <th>Purity &uarr;</th>
+                  <th>Frag. &darr;</th>
+                  <th>PosErr (m) &darr;</th>
+                  <th>Nodes</th>
+                  <th>Purity &uarr;</th>
+                  <th>Frag. &darr;</th>
+                  <th>PosErr (m) &darr;</th>
+                  <th>Nodes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>ConceptGraphs-style (RGB-D)</td>
+                  <td><strong>0.904</strong></td>
+                  <td>17.889</td>
+                  <td>3.064</td>
+                  <td>928.7</td>
+                  <td><strong>0.874</strong></td>
+                  <td>9.952</td>
+                  <td>2.744</td>
+                  <td>338.2</td>
+                </tr>
+                <tr>
+                  <td>SGFusion-style (RGB-D)</td>
+                  <td>0.884</td>
+                  <td>13.649</td>
+                  <td>3.129</td>
+                  <td>689.0</td>
+                  <td>0.864</td>
+                  <td>14.091</td>
+                  <td>3.485</td>
+                  <td>493.8</td>
+                </tr>
+                <tr class="ours-row">
+                  <td><strong>IncR-3DSGG (Ours, RGB-only)</strong></td>
+                  <td>0.883</td>
+                  <td><strong>1.132</strong></td>
+                  <td><strong>1.330</strong></td>
+                  <td><strong>54.0</strong></td>
+                  <td>0.843</td>
+                  <td><strong>1.186</strong></td>
+                  <td><strong>0.861</strong></td>
+                  <td><strong>42.2</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 4: VGGT & Runtime -->
+        <div id="tab-vggt" class="tab-content">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem;">
+            <div>
+              <h4 style="margin-bottom: 0.5rem;">Comparison to Feed-Forward Reconstruction (VGGT)</h4>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 0.75rem;">
+                Evaluated over 64,254 object pairs across 156 scans on 3RScan. Even when VGGT is given an oracle per-scan scale factor fitted to ground truth, PRP achieves lower distance MAE on 124 of 156 scans directly in meters.
+              </p>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Method</th>
+                      <th>Distance MAE (m) &darr;</th>
+                      <th>Scans Won &uarr;</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>VGGT (oracle scale-corrected)</td>
+                      <td>0.610 &plusmn; 0.216</td>
+                      <td>32 / 156</td>
+                    </tr>
+                    <tr class="ours-row">
+                      <td><strong>PRP (Ours, metric without calibration)</strong></td>
+                      <td><strong>0.487 &plusmn; 0.140</strong></td>
+                      <td><strong>124 / 156</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <h4 style="margin-bottom: 0.5rem;">Per-View Runtime Breakdown (NVIDIA RTX 3090)</h4>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 0.75rem;">
+                PRP, cross-view association, and incremental PGO together account for <strong>under 2% (16.2 ms)</strong> of the per-view runtime on top of the segmentation frontend.
+              </p>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Stage</th>
+                      <th>Mean Latency (ms)</th>
+                      <th>Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>EoMT Panoptic Segmentation</td>
+                      <td>1008.0 ms</td>
+                      <td>98.4%</td>
+                    </tr>
+                    <tr class="ours-row">
+                      <td>Parametric Relation Predictor (PRP)</td>
+                      <td>2.3 ms</td>
+                      <td>0.2%</td>
+                    </tr>
+                    <tr class="ours-row">
+                      <td>Cross-View Object Association</td>
+                      <td>1.4 ms</td>
+                      <td>0.1%</td>
+                    </tr>
+                    <tr class="ours-row">
+                      <td>Pose Graph Optimization (PGO)</td>
+                      <td>12.5 ms</td>
+                      <td>1.2%</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Total per View</strong></td>
+                      <td><strong>1024.2 ms</strong></td>
+                      <td><strong>100%</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Qualitative Results Section -->
+    <section id="qualitative">
+      <div class="section-card">
+        <h2 class="section-title">Qualitative Results</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">
+          In each 3RScan example below, the <strong>left</strong> shows the single-view local scene graph $\mathcal{G}_L$ with nodes at panoptic masks and edges predicted by PRP, while the <strong>right</strong> shows the accumulated global 3D scene graph $\mathcal{G}_G$ with nodes at PGO-optimized 3D positions. The room mesh is rendered purely for visual reference and is never used by our method. Click any image to enlarge.
+        </p>
+
+        <div class="gallery-grid">
+          <div class="gallery-item">
+            <img src="img/lg_gg_final.png" alt="Qualitative example on 3RScan frame 0-10" onclick="openLightbox(this.src)" />
+            <p class="gallery-caption">
+              <strong>3RScan Sequence (Frames 0–10):</strong> Left: Local scene graph $\mathcal{G}_L$ at $t=10$. Right: Global scene graph $\mathcal{G}_G$ accumulated over 10 views with PGO-optimized 3D object positions.
+            </p>
+          </div>
+
+          <div class="gallery-item">
+            <img src="img/lg_68.png" alt="Scene 68bae75f qualitative result" onclick="openLightbox(this.src)" />
+            <p class="gallery-caption">
+              <strong>Scene <code>68bae75f</code> ($t=9$):</strong> Local graph $\mathcal{G}_L$ (left) and accumulated global 3D scene graph $\mathcal{G}_G$ after 9 views (right).
+            </p>
+          </div>
+
+          <div class="gallery-item">
+            <img src="img/lg_7272.png" alt="Scene 7272e17c qualitative result" onclick="openLightbox(this.src)" />
+            <p class="gallery-caption">
+              <strong>Scene <code>7272e17c</code> ($t=10$):</strong> Local graph $\mathcal{G}_L$ (left) and accumulated global 3D scene graph $\mathcal{G}_G$ after 10 views (right).
+            </p>
+          </div>
+
+          <div class="gallery-item">
+            <img src="img/lg_c2.png" alt="Scene c2d99345 qualitative result" onclick="openLightbox(this.src)" />
+            <p class="gallery-caption">
+              <strong>Scene <code>c2d99345</code> ($t=8$):</strong> Local graph $\mathcal{G}_L$ (left) and accumulated global 3D scene graph $\mathcal{G}_G$ after 8 views (right).
+            </p>
+          </div>
+
+          <div class="gallery-item">
+            <img src="img/lg_f2.png" alt="Scene f2c76fe7 qualitative result" onclick="openLightbox(this.src)" />
+            <p class="gallery-caption">
+              <strong>Scene <code>f2c76fe7</code> ($t=27$):</strong> Long-horizon incremental accumulation over 27 views, maintaining compact node association and metric structure.
+            </p>
+          </div>
+
+          <div class="gallery-item">
+            <img src="img/comparison.png" alt="Comparison under non-zero fixed camera rotation on AI2-THOR" onclick="openLightbox(this.src)" />
+            <p class="gallery-caption">
+              <strong>AI2-THOR Merging Comparison (Non-Zero Fixed Rotation):</strong> Recovered 3D object instances across ConceptGraphs-style, SGFusion-style, and Ours (PGO), demonstrating significantly lower fragmentation and position error.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BibTeX Section -->
+    <section id="bibtex">
+      <div class="section-card">
+        <h2 class="section-title">Citation</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">
+          If you find our work useful in your research, please consider citing:
+        </p>
+        <div class="bibtex-wrapper">
+          <button class="copy-btn" onclick="copyBibtex(this)">Copy BibTeX</button>
+          <pre id="bibtex-code">@inproceedings{phatak2027incr3dsgg,
+  title     = {IncR-3DSGG: Incremental Posed RGB Image Based 3D Scene Graph Generation via Privileged Depth Supervision},
+  author    = {Phatak, Mrunmai and Kienzle, Daniel and Lienhart, Rainer},
+  booktitle = {Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)},
+  year      = {2027}
+}</pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Lightbox Modal for Images -->
+  <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+    <img id="lightbox-img" src="" alt="Enlarged figure" />
+  </div>
+
+  <footer>
+    <p>
+      <strong>IncR-3DSGG</strong> &bull; Universität Augsburg &bull; WACV 2027
+    </p>
+  </footer>
+
+  <script>
+    function switchTab(event, tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function copyBibtex(btn) {
+      const code = document.getElementById('bibtex-code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = orig; }, 2000);
+      });
+    }
+
+    function openLightbox(src) {
+      const lb = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      img.src = src;
+      lb.classList.add('open');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+  </script>
+</body>
+</html>
+
